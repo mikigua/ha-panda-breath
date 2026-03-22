@@ -1,7 +1,7 @@
 {
   "domain": "panda_breath",
   "name": "Panda Breath",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "documentation": "https://github.com/mikigua/ha-panda-breath",
   "issue_tracker": "https://github.com/mikigua/ha-panda-breath/issues",
   "requirements": ["websockets>=11.0"],

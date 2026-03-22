@@ -37,13 +37,15 @@ class PandaBreathCoordinator(DataUpdateCoordinator):
         )
         self.client = client
         self._realtime_data: dict[str, Any] = {}
+        self._pending_updates: dict[str, Any] = {}  # optimistic state
         self._stop_event = asyncio.Event()
         self._listener_task: asyncio.Task | None = None
 
     async def _async_update_data(self) -> dict[str, Any]:
         """
         Called every UPDATE_INTERVAL seconds.
-        Reconnects to get the full fresh state.
+        Reconnects to get the full fresh state, but respects any
+        pending optimistic updates to avoid UI flicker.
         """
         try:
             raw = await self.client.fetch_state()
@@ -56,12 +58,21 @@ class PandaBreathCoordinator(DataUpdateCoordinator):
                 KEY_FILTER_TEMP: settings.get(KEY_FILTER_TEMP, 30),
                 KEY_HOTBED_TEMP: settings.get(KEY_HOTBED_TEMP, 80),
                 KEY_FW_VERSION: settings.get(KEY_FW_VERSION, "unknown"),
-                # Keep realtime temp if available
                 KEY_WAREHOUSE_TEMPER: self._realtime_data.get(
                     KEY_WAREHOUSE_TEMPER,
                     settings.get(KEY_WAREHOUSE_TEMPER, 0)
                 ),
             }
+
+            # Apply pending optimistic updates — these take priority over
+            # the freshly fetched state until we're sure the device has
+            # processed the command (we clear them after one cycle).
+            for key, value in self._pending_updates.items():
+                state[key] = value
+
+            # Clear pending updates after applying them once
+            self._pending_updates.clear()
+
             _LOGGER.debug("Updated state: %s", state)
             return state
 
@@ -73,10 +84,10 @@ class PandaBreathCoordinator(DataUpdateCoordinator):
         settings = data.get("settings", {})
         if KEY_WAREHOUSE_TEMPER in settings:
             self._realtime_data[KEY_WAREHOUSE_TEMPER] = settings[KEY_WAREHOUSE_TEMPER]
-            # Update coordinator data in place so sensor picks it up immediately
             if self.data:
-                self.data[KEY_WAREHOUSE_TEMPER] = settings[KEY_WAREHOUSE_TEMPER]
-                self.async_set_updated_data(dict(self.data))
+                updated = dict(self.data)
+                updated[KEY_WAREHOUSE_TEMPER] = settings[KEY_WAREHOUSE_TEMPER]
+                self.async_set_updated_data(updated)
 
     async def start_listener(self) -> None:
         """Start the persistent WebSocket listener for real-time updates."""
@@ -98,7 +109,19 @@ class PandaBreathCoordinator(DataUpdateCoordinator):
         _LOGGER.debug("Stopped real-time listener")
 
     async def send_settings(self, members: dict[str, Any]) -> None:
-        """Send a settings command to the device."""
+        """
+        Send a settings command to the device.
+        Applies optimistic update immediately so the UI reflects the
+        change right away, without waiting for the next WebSocket poll.
+        """
+        # Apply optimistic update immediately to current data
+        if self.data:
+            updated = dict(self.data)
+            updated.update(members)
+            self.async_set_updated_data(updated)
+
+        # Store as pending so the next fetch_state doesn't overwrite it
+        self._pending_updates.update(members)
+
+        # Send the actual command
         await self.client.send_command("settings", members)
-        # Refresh state after command
-        await self.async_request_refresh()
