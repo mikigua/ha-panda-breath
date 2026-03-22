@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="https://biqu.equipment/cdn/shop/files/1_b6f16f3b-9be2-46e1-ae3d-a31be8abdfaf.jpg?v=1736227118&width=600" alt="BIQU Panda Breath" width="500"/>
-</p>
+
 
 <h1 align="center">🐼 Panda Breath for Home Assistant</h1>
 
