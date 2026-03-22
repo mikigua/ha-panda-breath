@@ -1,0 +1,12 @@
+{
+  "domain": "panda_breath",
+  "name": "Panda Breath",
+  "version": "1.0.0",
+  "documentation": "https://github.com/mikigua/ha-panda-breath",
+  "issue_tracker": "https://github.com/mikigua/ha-panda-breath/issues",
+  "requirements": ["websockets>=11.0"],
+  "dependencies": [],
+  "codeowners": ["@mikigua"],
+  "iot_class": "local_push",
+  "config_flow": true
+}

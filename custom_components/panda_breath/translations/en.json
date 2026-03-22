@@ -1,0 +1,24 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Panda Breath",
+        "description": "Enter the hostname or IP address of your Panda Breath device.",
+        "data": {
+          "host": "Hostname or IP",
+          "port": "Port"
+        }
+      },
+      "discovery_confirm": {
+        "title": "Panda Breath found",
+        "description": "A Panda Breath device was found at `{host}`. Do you want to add it?"
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the device. Check the hostname/IP and make sure the device is on the same network."
+    },
+    "abort": {
+      "already_configured": "This device is already configured."
+    }
+  }
+}
